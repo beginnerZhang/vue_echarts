@@ -14,6 +14,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+import { getThemeValue } from '@/utils/theme_utils'
 export default {
     data(){
         return{
@@ -24,14 +26,24 @@ export default {
             titleFontSize: 0 // 指明标题的字体大小
         }
     },
+    created(){
+        this.$socket.registerCallBack('trendData', this.getData)
+    },
     mounted(){
         this.initChart()
-        this.getData()
-        window.addEventListener('resize', this.screenAdaptor)
-        this.screenAdaptor()
+        // this.getData()
+        this.$socket.send({
+            action: 'getData',
+            socketType: 'trendData',
+            chartName: 'trend',
+            value: ''
+        })
+        window.addEventListener('resize', this.screenAdapter)
+        this.screenAdapter()
     },
     destroyed(){
-        window.removeEventListener('resize',this.screenAdaptor)
+        window.removeEventListener('resize',this.screenAdapter)
+        this.$socket.unRegisterCallBack('trendData')
     },
     computed: {
         selectTypes () {
@@ -53,18 +65,29 @@ export default {
         // 设置给标题的样式
         comStyle () {
             return {
-                fontSize: this.titleFontSize + 'px'
+                fontSize: this.titleFontSize + 'px',
+                color:getThemeValue(this.theme).titleColor
             }
         },
         marginStyle () {
             return {
                 marginLeft: this.titleFontSize + 'px'
             }
-        }
+        },
+        ...mapState(['theme'])
+    },
+    watch:{
+      theme(){
+        console.log('主题切换了')
+        this.chartInstance.dispose()
+        this.initChart()
+        this.screenAdapter()
+        this.updateChart()
+      }
     },
     methods:{
         initChart(){
-            this.chartInstance = this.$echarts.init(this.$refs.trend_ref, 'chalk')
+            this.chartInstance = this.$echarts.init(this.$refs.trend_ref, this.theme)
             const initOption = {
                 grid: {
                     left: '3%',
@@ -91,8 +114,8 @@ export default {
             }
             this.chartInstance.setOption(initOption)
         },
-        async getData(){
-            const {data: ret} = await this.$http.get('trend')
+        getData(ret){
+            // const {data: ret} = await this.$http.get('trend')
             
             this.allData = ret
             console.log(this.allData)
@@ -151,7 +174,7 @@ export default {
             }
             this.chartInstance.setOption(dataOption)
         },
-        screenAdaptor(){
+        screenAdapter(){
             this.titleFontSize = this.$refs.trend_ref.offsetWidth / 100 * 3.6
             const adapterOption = {
                 legend: {

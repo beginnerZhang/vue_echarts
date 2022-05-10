@@ -9,6 +9,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+import { getThemeValue } from '@/utils/theme_utils'
 export default {
   data () {
     return {
@@ -28,9 +30,11 @@ export default {
     },
     comStyle () {
       return {
-        fontSize: this.titleFontSize + 'px'
+        fontSize: this.titleFontSize + 'px',
+        color:getThemeValue(this.theme).titleColor
       }
-    }
+    },
+    ...mapState(['theme'])
   },
   mounted () {
     this.initChart()
@@ -43,7 +47,7 @@ export default {
   },
   methods: {
     initChart () {
-      this.chartInstance = this.$echarts.init(this.$refs.hot_ref,'chalk')
+      this.chartInstance = this.$echarts.init(this.$refs.hot_ref,this.theme)
       const initOption = {
           title: {
               text: '▎ 热销商品的占比',
@@ -133,8 +137,8 @@ export default {
           }
         },
         legend: {
-          itemWidth: this.titleFontSize / 2,
-          itemHeight: this.titleFontSize / 2,
+          itemWidth: this.titleFontSize,
+          itemHeight: this.titleFontSize,
           itemGap: this.titleFontSize / 2,
           textStyle: {
             fontSize: this.titleFontSize / 2
@@ -163,6 +167,15 @@ export default {
             this.currentIndex = 0
         }
         this.updateChart()
+    }
+  },
+  watch:{
+    theme(){
+      console.log('主题切换了')
+      this.chartInstance.dispose()
+      this.initChart()
+      this.screenAdapter()
+      this.updateChart()
     }
   }
 }
